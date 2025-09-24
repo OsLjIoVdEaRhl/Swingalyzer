@@ -6,12 +6,13 @@ import numpy as np
 
 # Characteristic UUID of the device
 # par_notification_characteristic="0000ae02-0000-1000-8000-00805f9b34fb"
-par_notification_characteristic=0x0007
+par_notification_characteristic= "0000494d-0000-1000-8000-00805f9b34fb"
 # Characteristic UUID of the device (with write attribute Write)
 # par_write_characteristic="0000ae01-0000-1000-8000-00805f9b34fb"
-par_write_characteristic=0x0005
 
-par_device_addr="70:53:B2:02:20:02" # MAC address of the device You need to fill in the mac address of the device here
+#par_write_characteristic=0x0005
+
+par_device_addr="E6:6F:24:E5:83:9F" # MAC address of the device You need to fill in the mac address of the device here
 
 # Listening callback function, here is the print message
 def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
