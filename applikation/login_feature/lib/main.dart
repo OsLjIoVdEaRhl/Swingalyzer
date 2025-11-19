@@ -1,6 +1,7 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
@@ -10,26 +11,20 @@ import 'pages/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        Provider<AuthService>(
-          create: (_) => AuthService(),
-        ),
-      ],
+      providers: [Provider<AuthService>(create: (_) => AuthService())],
       child: MaterialApp(
         title: 'Flutter Firebase Auth',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
+        theme: ThemeData(primarySwatch: Colors.blue),
         home: const AuthWrapper(),
       ),
     );
@@ -37,20 +32,18 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({Key? key}) : super(key: key);
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    
+
     return StreamBuilder<firebase_auth.User?>(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -65,7 +58,7 @@ class AuthWrapper extends StatelessWidget {
 }
 
 class LoginRegisterPage extends StatefulWidget {
-  const LoginRegisterPage({Key? key}) : super(key: key);
+  const LoginRegisterPage({super.key});
 
   @override
   State<LoginRegisterPage> createState() => _LoginRegisterPageState();
