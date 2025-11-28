@@ -32,7 +32,6 @@ class AuthService {
     String password,
     String name, {
     String? phone,
-    String? yearJoined,
     String? dominantHand,
     String? typicalBallFlight,
   }) async {
@@ -54,9 +53,7 @@ class AuthService {
         };
 
         if (phone != null && phone.isNotEmpty) data['phone'] = phone;
-        if (yearJoined != null && yearJoined.isNotEmpty) {
-          data['yearJoined'] = yearJoined;
-        }
+
         if (dominantHand != null && dominantHand.isNotEmpty) {
           data['dominantHand'] = dominantHand;
         }
