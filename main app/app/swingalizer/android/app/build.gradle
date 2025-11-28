@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.swingalizer"
-    compileSdk = 35
-    
-    ndkVersion "27.0.12271774"
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
@@ -25,8 +23,8 @@ android {
 
     defaultConfig {
         applicationId "com.example.swingalizer"
-        minSdkVersion 21
-        targetSdkVersion 35
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion 36
         versionCode 1
         versionName "1.0.0"
     }

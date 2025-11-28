@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
 class AnalyzePage extends StatefulWidget {
   const AnalyzePage({super.key});
@@ -74,11 +76,11 @@ class _AnalyzePageState extends State<AnalyzePage> {
   Future<String> _detectSensorType(List<String> csvLines) async {
     try {
       if (csvLines.length < 2) return "unknown";
-      final headers = csvLines[0]
-          .split(',')
-          .map((h) => h.trim().toLowerCase())
-          .toList();
-      if (!headers.contains('x') || !headers.contains('y') || !headers.contains('z')) {
+      final headers =
+          csvLines[0].split(',').map((h) => h.trim().toLowerCase()).toList();
+      if (!headers.contains('x') ||
+          !headers.contains('y') ||
+          !headers.contains('z')) {
         return "unknown";
       }
       final xIdx = headers.indexOf('x');
@@ -102,8 +104,10 @@ class _AnalyzePageState extends State<AnalyzePage> {
       final median = allValues[allValues.length ~/ 2];
       final maxVal = allValues.last;
       double mean = allValues.reduce((a, b) => a + b) / allValues.length;
-      double variance =
-          allValues.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) / allValues.length;
+      double variance = allValues
+              .map((v) => (v - mean) * (v - mean))
+              .reduce((a, b) => a + b) /
+          allValues.length;
 
       if (maxVal < 25 && median < 2) return "gyro";
       if (maxVal >= 25 || variance > 5) return "accel";
@@ -133,8 +137,12 @@ class _AnalyzePageState extends State<AnalyzePage> {
     double bs;
     double ds;
     try {
-      bs = (backswingTime is num) ? backswingTime.toDouble() : double.parse(backswingTime.toString());
-      ds = (downswingTime is num) ? downswingTime.toDouble() : double.parse(downswingTime.toString());
+      bs = (backswingTime is num)
+          ? backswingTime.toDouble()
+          : double.parse(backswingTime.toString());
+      ds = (downswingTime is num)
+          ? downswingTime.toDouble()
+          : double.parse(downswingTime.toString());
     } catch (_) {
       return '—';
     }
@@ -192,7 +200,8 @@ class _AnalyzePageState extends State<AnalyzePage> {
         gyroFile = kIsWeb ? file1Web : file1Path;
       } else {
         setState(() {
-          feedback = 'Could not reliably detect types.\nFile1: $type1  File2: $type2';
+          feedback =
+              'Could not reliably detect types.\nFile1: $type1  File2: $type2';
           isLoading = false;
         });
         return;
@@ -214,10 +223,10 @@ class _AnalyzePageState extends State<AnalyzePage> {
             'gyro_file', (gyroFile as PlatformFile).bytes!,
             filename: gyroFile.name));
       } else {
-        request.files
-            .add(await http.MultipartFile.fromPath('acc_file', accelFile as String));
-        request.files
-            .add(await http.MultipartFile.fromPath('gyro_file', gyroFile as String));
+        request.files.add(
+            await http.MultipartFile.fromPath('acc_file', accelFile as String));
+        request.files.add(
+            await http.MultipartFile.fromPath('gyro_file', gyroFile as String));
       }
 
       var response = await request.send();
@@ -242,11 +251,27 @@ class _AnalyzePageState extends State<AnalyzePage> {
             tempoRatioLabel = _formatRatio(backswingTime, downswingTime);
 
             // Club speed: prefer numeric clubSpeed (server returns m/s) else placeholder
-            clubSpeedLabel = clubSpeed != null ? '${clubSpeed.toString()} m/s' : '—';
+            clubSpeedLabel =
+                clubSpeed != null ? '${clubSpeed.toString()} m/s' : '—';
 
             // Impact orientation: show uppercase user-friendly label
-            impactOrientationLabel = impact != null ? impact.toString().toUpperCase() : '—';
+            impactOrientationLabel =
+                impact != null ? impact.toString().toUpperCase() : '—';
           });
+
+          // Persist summary to Firestore under current user
+          try {
+            final user = firebase_auth.FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .set({'sessionSummary': summary}, SetOptions(merge: true));
+            }
+          } catch (e) {
+            // Non-fatal: log but do not interrupt UI
+            debugPrint('Failed to save sessionSummary: $e');
+          }
         } catch (e) {
           setState(() {
             feedback = 'Server returned invalid JSON: $e';
@@ -274,10 +299,12 @@ class _AnalyzePageState extends State<AnalyzePage> {
       final f2 = file2Web?.name ?? 'No file 2';
       return 'File 1: $f1\nFile 2: $f2';
     } else {
-      final f1 =
-          file1Path != null ? file1Path!.split(RegExp(r'[\\/]+')).last : 'No file 1';
-      final f2 =
-          file2Path != null ? file2Path!.split(RegExp(r'[\\/]+')).last : 'No file 2';
+      final f1 = file1Path != null
+          ? file1Path!.split(RegExp(r'[\\/]+')).last
+          : 'No file 1';
+      final f2 = file2Path != null
+          ? file2Path!.split(RegExp(r'[\\/]+')).last
+          : 'No file 2';
       return 'File 1: $f1\nFile 2: $f2';
     }
   }
@@ -346,8 +373,8 @@ class _AnalyzePageState extends State<AnalyzePage> {
                         value: tempoRatioLabel,
                         isLarge: true,
                         titleStyle: const TextStyle(fontSize: 16),
-                        valueStyle:
-                            const TextStyle(fontSize: 44, fontWeight: FontWeight.w900),
+                        valueStyle: const TextStyle(
+                            fontSize: 44, fontWeight: FontWeight.w900),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -367,7 +394,8 @@ class _AnalyzePageState extends State<AnalyzePage> {
                     Text(_displayName(),
                         style: const TextStyle(color: Colors.white70)),
                     const SizedBox(height: 12),
-                    if (isLoading) const Center(child: CircularProgressIndicator()),
+                    if (isLoading)
+                      const Center(child: CircularProgressIndicator()),
                     const SizedBox(height: 12),
 
                     // ===== Feedback Box =====
@@ -381,18 +409,19 @@ class _AnalyzePageState extends State<AnalyzePage> {
                               blurRadius: 8,
                               offset: const Offset(0, 4))
                         ],
-                        border: Border.all(color: _accent.withOpacity(0.6), width: 1.5),
+                        border: Border.all(
+                            color: _accent.withOpacity(0.6), width: 1.5),
                       ),
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          const Row(
                             children: [
-                              const Icon(Icons.chat_bubble_outline,
+                              Icon(Icons.chat_bubble_outline,
                                   color: _accent, size: 28),
-                              const SizedBox(width: 10),
-                              const Text('Swing Analysis',
+                              SizedBox(width: 10),
+                              Text('Swing Analysis',
                                   style: TextStyle(
                                       color: _accent,
                                       fontSize: 18,
@@ -410,12 +439,14 @@ class _AnalyzePageState extends State<AnalyzePage> {
                                   .map((line) {
                                 final trimmed = line.trim();
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 2),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 2),
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 2),
                                         child: Icon(
                                           Icons.circle,
                                           size: 8,
@@ -425,7 +456,8 @@ class _AnalyzePageState extends State<AnalyzePage> {
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
-                                          trimmed.replaceFirst(RegExp(r'^[-•]\s*'), ''),
+                                          trimmed.replaceFirst(
+                                              RegExp(r'^[-•]\s*'), ''),
                                           style: const TextStyle(
                                               color: Colors.white70,
                                               fontSize: 14,
@@ -454,25 +486,25 @@ class _AnalyzePageState extends State<AnalyzePage> {
                         ],
                       ),
                       padding: const EdgeInsets.all(14),
-                      child: Row(
+                      child: const Row(
                         children: [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Session Summary',
+                                Text('Session Summary',
                                     style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700)),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                                 Text(
                                     'Recent swings, speed over time and areas to improve.',
-                                    style: const TextStyle(color: Colors.white70)),
+                                    style: TextStyle(color: Colors.white70)),
                               ],
                             ),
                           ),
-                          const Icon(Icons.insert_chart, color: _accent, size: 28),
+                          Icon(Icons.insert_chart, color: _accent, size: 28),
                         ],
                       ),
                     ),
