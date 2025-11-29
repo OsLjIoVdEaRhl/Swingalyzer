@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TrainingPage extends StatefulWidget {
   const TrainingPage({super.key});
@@ -9,56 +11,195 @@ class TrainingPage extends StatefulWidget {
 
 class _TrainingPageState extends State<TrainingPage> {
   int? expandedIndex;
+  String feedback = '';
+  bool isLoading = true;
 
-  final List<Map<String, dynamic>> drills = [
-    {
-      'title': 'Tempo Drill',
-      'description': 'Master consistent swing rhythm',
-      'icon': Icons.timer,
-      'color': Color(0xFF7BE39A),
-      'steps': [
-        'Practice slow swings with metronome',
-        'Record and analyze swing tempo',
-        'Gradually increase speed while keeping rhythm'
-      ],
-    },
-    {
-      'title': 'Distance Control',
-      'description': 'Improve accuracy and distance',
-      'icon': Icons.straighten,
-      'color': Color(0xFF42C18C),
-      'steps': [
-        'Focus on consistent contact point',
-        'Use markers to measure swing distance',
-        'Adjust swing strength for target accuracy'
-      ],
-    },
-    {
-      'title': 'Backswing Path',
-      'description': 'Refine your backswing mechanics',
-      'icon': Icons.trending_up,
-      'color': Color(0xFF00BFA6),
-      'steps': [
-        'Check alignment with target line',
-        'Practice smooth, controlled takeaway',
-        'Avoid over-rotating shoulders'
-      ],
-    },
-    {
-      'title': 'Impact Position',
-      'description': 'Optimize your impact point',
-      'icon': Icons.gps_fixed,
-      'color': Color(0xFF00D9B8),
-      'steps': [
-        'Focus on clubface square at impact',
-        'Keep wrists firm through impact',
-        'Practice hitting the sweet spot consistently'
-      ],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadAnalysisFeedback();
+  }
+
+  Future<void> _loadAnalysisFeedback() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (doc.exists && doc.data()?.containsKey('sessionSummary') == true) {
+          final sessionData = doc['sessionSummary'];
+          setState(() {
+            feedback = sessionData['feedback'] ?? '';
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            feedback =
+                'No analysis data available. Please analyze a swing first.';
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        feedback = 'Error loading analysis: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> _generateDrillsFromFeedback() {
+    if (feedback.isEmpty || feedback.contains('No analysis')) {
+      return [
+        {
+          'title': 'Start by Analyzing',
+          'description': 'Analyze a swing to get personalized drills',
+          'icon': Icons.info_outline,
+          'color': Color(0xFF7BE39A),
+          'steps': [
+            'Go to the Analyze page',
+            'Select your accelerometer and gyro CSV files',
+            'Receive personalized training recommendations'
+          ],
+        }
+      ];
+    }
+
+    final List<Map<String, dynamic>> generatedDrills = [];
+    final lowerFeedback = feedback.toLowerCase();
+
+    // Parse feedback and create relevant drills
+    if (lowerFeedback.contains('tempo') ||
+        lowerFeedback.contains('rhythm') ||
+        lowerFeedback.contains('timing')) {
+      generatedDrills.add({
+        'title': 'Tempo Drill',
+        'description': 'Master consistent swing rhythm',
+        'icon': Icons.timer,
+        'color': Color(0xFF7BE39A),
+        'steps': [
+          'Practice slow swings with metronome at 80 BPM',
+          'Record and analyze swing tempo consistency',
+          'Gradually increase speed while keeping rhythm smooth'
+        ],
+      });
+    }
+
+    if (lowerFeedback.contains('distance') ||
+        lowerFeedback.contains('power') ||
+        lowerFeedback.contains('speed')) {
+      generatedDrills.add({
+        'title': 'Distance Control',
+        'description': 'Improve accuracy and distance',
+        'icon': Icons.straighten,
+        'color': Color(0xFF42C18C),
+        'steps': [
+          'Focus on consistent contact point on clubface',
+          'Use markers at 20, 40, 60 yard intervals',
+          'Adjust swing strength progressively for target accuracy'
+        ],
+      });
+    }
+
+    if (lowerFeedback.contains('backswing') ||
+        lowerFeedback.contains('takeaway') ||
+        lowerFeedback.contains('path')) {
+      generatedDrills.add({
+        'title': 'Backswing Path',
+        'description': 'Refine your backswing mechanics',
+        'icon': Icons.trending_up,
+        'color': Color(0xFF00BFA6),
+        'steps': [
+          'Check alignment with target line consistently',
+          'Practice smooth, controlled takeaway motion',
+          'Film your swing to monitor over-rotation'
+        ],
+      });
+    }
+
+    if (lowerFeedback.contains('impact') ||
+        lowerFeedback.contains('contact') ||
+        lowerFeedback.contains('clubface')) {
+      generatedDrills.add({
+        'title': 'Impact Position',
+        'description': 'Optimize your impact point',
+        'icon': Icons.gps_fixed,
+        'color': Color(0xFF00D9B8),
+        'steps': [
+          'Focus on keeping clubface square at impact',
+          'Keep wrists firm and stable through impact zone',
+          'Practice hitting the sweet spot consistently'
+        ],
+      });
+    }
+
+    if (lowerFeedback.contains('alignment') ||
+        lowerFeedback.contains('stance') ||
+        lowerFeedback.contains('posture')) {
+      generatedDrills.add({
+        'title': 'Alignment Drill',
+        'description': 'Improve body alignment and posture',
+        'icon': Icons.straighten,
+        'color': Color(0xFF76E4A1),
+        'steps': [
+          'Set alignment sticks parallel to target line',
+          'Practice address position with proper alignment',
+          'Check shoulder and hip alignment at setup'
+        ],
+      });
+    }
+
+    if (lowerFeedback.contains('rotation') ||
+        lowerFeedback.contains('hip') ||
+        lowerFeedback.contains('shoulder')) {
+      generatedDrills.add({
+        'title': 'Rotation Drill',
+        'description': 'Improve body rotation and sequencing',
+        'icon': Icons.rotate_90_degrees_ccw,
+        'color': Color(0xFF6DD897),
+        'steps': [
+          'Practice hip rotation independently of shoulders',
+          'Use resistance band for controlled rotation',
+          'Focus on proper downswing sequence'
+        ],
+      });
+    }
+
+    // If no specific drills matched, provide general recommendations
+    if (generatedDrills.isEmpty) {
+      generatedDrills.add({
+        'title': 'Overall Practice',
+        'description': 'Based on your analysis',
+        'icon': Icons.golf_course,
+        'color': Color(0xFF7BE39A),
+        'steps': [
+          feedback.split('\n').isNotEmpty
+              ? feedback.split('\n').first
+              : 'Continue practicing your swing',
+          'Focus on one improvement at a time',
+          'Record your swings to track progress'
+        ],
+      });
+    }
+
+    return generatedDrills;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final drills = _generateDrillsFromFeedback();
+
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF093823),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF093823),
       body: SafeArea(
@@ -83,7 +224,7 @@ class _TrainingPageState extends State<TrainingPage> {
               const SizedBox(height: 18),
               for (int i = 0; i < drills.length; i++)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 30), // Increased spacing
+                  padding: const EdgeInsets.only(bottom: 30),
                   child: _DrillCard(
                     drill: drills[i],
                     isExpanded: expandedIndex == i,
@@ -229,8 +370,7 @@ class _DrillCard extends StatelessWidget {
                                     child: Text(
                                       step,
                                       style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13),
+                                          color: Colors.white70, fontSize: 13),
                                     ),
                                   ),
                                 ],

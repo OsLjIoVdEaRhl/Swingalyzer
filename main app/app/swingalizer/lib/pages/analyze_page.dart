@@ -34,7 +34,44 @@ class _AnalyzePageState extends State<AnalyzePage> {
   String clubSpeedLabel = '—';
   String tempoRatioLabel = '—';
 
-  final String backendUrl = "http://127.0.0.1:8000/analyze_swing";
+  final String backendUrl = "http://192.168.0.109:8000/analyze_swing";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedAnalysis();
+  }
+
+  Future<void> _loadSavedAnalysis() async {
+    try {
+      final user = firebase_auth.FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (doc.exists && doc.data()?.containsKey('sessionSummary') == true) {
+          final sessionData = doc['sessionSummary'];
+          setState(() {
+            final tempo = sessionData['tempo_ratio'];
+            final clubSpeed = sessionData['club_speed'];
+            final impact = sessionData['impact_orientation'];
+            final backswingTime = sessionData['backswing_time'];
+            final downswingTime = sessionData['downswing_time'];
+
+            tempoRatioLabel = _formatRatio(backswingTime, downswingTime);
+            clubSpeedLabel =
+                clubSpeed != null ? '${clubSpeed.toString()} m/s' : '—';
+            impactOrientationLabel =
+                impact != null ? impact.toString().toUpperCase() : '—';
+            feedback = sessionData['feedback'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading saved analysis: $e');
+    }
+  }
 
   Future<void> pickBothFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -241,7 +278,6 @@ class _AnalyzePageState extends State<AnalyzePage> {
             feedback = data['feedback'] ?? '';
 
             // Fill UI boxes from summary
-            final tempo = summary['tempo_ratio'];
             final clubSpeed = summary['club_speed'];
             final impact = summary['impact_orientation'];
             final backswingTime = summary['backswing_time'];
@@ -263,10 +299,15 @@ class _AnalyzePageState extends State<AnalyzePage> {
           try {
             final user = firebase_auth.FirebaseAuth.instance.currentUser;
             if (user != null) {
+              final sessionData = {
+                ...summary,
+                'feedback': feedback,
+              };
               await FirebaseFirestore.instance
                   .collection('users')
                   .doc(user.uid)
-                  .set({'sessionSummary': summary}, SetOptions(merge: true));
+                  .set(
+                      {'sessionSummary': sessionData}, SetOptions(merge: true));
             }
           } catch (e) {
             // Non-fatal: log but do not interrupt UI
