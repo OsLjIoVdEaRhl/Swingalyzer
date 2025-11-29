@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "225336364489",
+    "firebase_url": "https://loginfeature-a354a-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "loginfeature-a354a",
+    "storage_bucket": "loginfeature-a354a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225336364489:android:ff7333d0b6d63ab066ec18",
+        "android_client_info": {
+          "package_name": "com.example.login_feature"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "225336364489-b5jrmt2fmcjtojuj4plm9n3g4qtg79rh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMQgPZ_FspLVrBfUqNd5Cqcrn6i17OCFA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "225336364489-b5jrmt2fmcjtojuj4plm9n3g4qtg79rh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "225336364489-kj3sud4l7u8604g4saer8qqm23gsnfhd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.loginFeature"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
